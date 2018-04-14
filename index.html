@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Animation</title>
+    <style>
+      body { font-family: Arial; color: #ff6a00; background-color: #000; margin: 0px; overflow: hidden; }
+    </style>
+</head>
+<body>
+    <script src="three.js"></script>
+    <script src="OrbitControls.js"></script>
+    <script src="JDLoader.min.js"></script>
+    <script>
+
+        var meshes = [], mixers = [], hemisphereLight, camera, scene, renderer, controls;
+        var clock = new THREE.Clock;
+        var mouse;
+        var clickableObjects = [];
+        var deg = Math.PI / 180;
+
+        init();
+        animate();
+
+        function init()
+
+        {
+            container = document.createElement('div');
+            document.body.appendChild(container);
+            scene = new THREE.Scene();
+
+            //hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x222222, 0.9); //( skyColor, groundColor, intensity )
+            //hemisphereLight.position.set(0, 10000, 0);
+            //scene.add(hemisphereLight);
+
+            // scene.add(new THREE.AmbientLight(0x161616, 1));
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener( 'mousedown', onMouseDown, false );
+            document.addEventListener('touchstart', onDocumentTouchStart, false);
+
+            var loader = new THREE.JDLoader();
+
+
+
+// LIGHTS Allan
+            scene.add( new THREE.AmbientLight( 0x443333, 0.1 ) );
+            var light = new THREE.DirectionalLight( 0xffddcc, 0.1 );
+            light.position.set( 1, 0.75, 0.5 );
+            scene.add( light );
+            var light = new THREE.DirectionalLight( 0xccccff, 0.1 );
+            light.position.set( -1, 0.75, -0.5 );
+            scene.add( light );
+
+            function GetObjectByName(objectName) {
+              console.log('getobjectbyname function has run');
+              for (var i = 0; i < clickableObjects.length; i++) {
+                if (clickableObjects[i].name == objectName) {
+                  return clickableObjects[i];
+                  break
+                }
+              }
+            }
+
+// Tests YOU CAN CHANGE ACTS HERE
+            loader.load("Brian_JS/room2.JD", function(data){
+
+              var parentCube = new THREE.Mesh(new THREE.CubeGeometry(.05, .05, .05, 1, 1, 1), );
+              scene.add(parentCube);
+
+              var multiMaterial = new THREE.MultiMaterial(data.materials);
+              console.log(data);
+              for (var i = 0; i < data.geometries.length; ++i){
+                  var mesh = new THREE.SkinnedMesh(data.geometries[i], multiMaterial);
+                  mesh.scale.set(15,15,15);
+                  mesh.position.set(0,0,0);
+                  // parentCube.add(mesh);
+                  // THREE.SceneUtils.detach(mesh, scene, scene);
+                  // parentCube.updateMatrixWorld();
+                  // THREE.SceneUtils.attach(mesh, scene, parentCube);
+                  // parentCube.updateMatrixWorld();
+
+                  meshes.push(mesh);
+                  parentCube.add(mesh);
+                  // console.log(mesh);
+                  mesh.onClick = function () {
+                      // var wholeShebang = scene.getObjectById( 14, true );
+                      // var myName = this.materials.name;
+                      console.log(this.id);
+                      console.log(mesh);
+                      if(this.geometry.name === "SimpleSphere02_002"){
+                        camera.position.set(-35,100,3000);
+                        // parentCube.position.set(-35,0,45);
+                        // var direction = new THREE.Vector3(0, 0, -5); // amount to move per frame
+                        // function animate() {
+                        //   if(parentCube.position.z != "-400"){
+                        //     parentCube.position.add(direction); // add to position
+                        //     renderer.render(camera, scene); // render new frame
+                        //     requestAnimationFrame(animate); // keep looping
+                        //   }else{
+                        //     camera.position.z = -42.287306818000566;
+                        //     camera.position.x = 89.9155000277449;
+                        //     camera.position.y = 59.99680130776795;
+                        //   }
+                        // }
+
+
+                      // requestAnimationFrame(animate);
+                      // parentCube.position.set(0,0,-125);
+                      // parentCube.visible = false;
+                    }
+                    // onClickFunction(this);
+                  }
+                  clickableObjects.push(mesh);
+                  scene.add(mesh);
+                  parentCube.add(mesh);
+
+                  if (mesh.geometry.animations){
+                      // console.log(mesh.geometry);
+                      // console.log('has animation');
+                      var mixer = new THREE.AnimationMixer(mesh);
+                      mixers.push(mixer);
+                      mixer.clipAction(mesh.geometry.animations[0]).play();
+                  }
+              }
+
+              camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10 * data.boundingSphere.radius);
+              // camera.position.z = data.boundingSphere.center.z + 2.5 * data.boundingSphere.radius;
+              // camera.position.z = -83.66537550075006;
+              // camera.position.x = 70.1903892988178;
+              // camera.position.y = 63.39468881122428;
+              camera.position.set(0,2000,0);
+
+              camera.lookAt(data.boundingSphere.center);
+              scene.add(camera);  //mainLight.position.copy(camera.position);
+              camera.add(new THREE.DirectionalLight(0xFFFFFF, 1));
+              if (!controls)
+                 controls = new THREE.OrbitControls(camera, renderer.domElement);
+              controls.target.copy(data.boundingSphere.center);
+
+              // var scl = [1, 1, 1];
+              // var pos = [0, 0, 0];
+              // var rot = [90 * deg, 0, 0];
+              // var materials = data.materials;
+              // var geometry = data.geometries[0];
+              // var skinnedMesh = new THREE.SkinnedMesh(geometry, new THREE.MultiMaterial(materials));
+              // skinnedMesh.name = name;
+              // skinnedMesh.scale.set(scl[0], scl[1], scl[2]);
+              // skinnedMesh.position.set(pos[0], pos[1], pos[2]);
+              // skinnedMesh.rotation.set(rot[0], rot[1], rot[2]);
+              // skinnedMesh.rotation.order = 'XYZ';
+            });
+        }
+
+        function animate() {
+            var delta = clock.getDelta();
+            for (var i = 0; i < mixers.length; ++i)
+                mixers[i].update(delta);
+            if (controls) controls.update();
+            if (camera)  renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+            // console.log('X: ' + camera.position.x + ', Y: ' + camera.position.y + ', Z: ' + camera.position.z);
+        }
+
+        function onWindowResize() {
+            if (camera) {
+              camera.aspect = window.innerWidth / window.innerHeight;
+              camera.updateProjectionMatrix();
+            }
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onDocumentTouchStart(event) {
+          event.preventDefault();
+          console.log('onDocumentTouchStart' + clickableObjects);
+          event.clientX = event.touches[0].clientX;
+          event.clientY = event.touches[0].clientY;
+          mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+          mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+          raycaster.setFromCamera(mouse, camera);
+          var intersects = raycaster.intersectObjects(clickableObjects);
+          if (intersects.length > 0) {
+            intersects[0].object.onClick();
+          }
+        }
+
+        function onMouseDown(event) {
+          console.log(camera.position);
+          event.preventDefault();
+          if (event.touches === undefined) {
+            mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+            mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            var intersects = raycaster.intersectObjects(clickableObjects);
+            if (intersects.length > 0) {
+              intersects[0].object.onClick();
+            }
+          }
+        }
+
+
+    </script>
+</body>
+</html>

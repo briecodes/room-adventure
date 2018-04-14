@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Animation</title>
+    <style>
+      body { font-family: Arial; color: #ff6a00; background-color: #000; margin: 0px; overflow: hidden; }
+    </style>
+</head>
+<body>
+    <script src="three.js"></script>
+    <script src="OrbitControls.js"></script>
+    <script src="JDLoader.min.js"></script>
+    <script>
+        var meshes = [], mixers = [], hemisphereLight, camera, scene, renderer, controls;
+        var clock = new THREE.Clock;
+        var mouse;
+        var clickableObjects = [];
+        var deg = Math.PI / 180;
+        var parentCube = new THREE.Mesh(new THREE.CubeGeometry(0.01, 0.01, 0.01, 1, 1, 1), );
+        var crossHairTexture = new THREE.TextureLoader().load( 'Brian_JS/crosshair.png' );
+        var crossHairGeometry = new THREE.PlaneGeometry( 25, 25, 1, 1 );
+        var crossHairMaterial = new THREE.MeshBasicMaterial( {map: crossHairTexture, transparent: true, side: THREE.DoubleSide} );
+        var crossHair = new THREE.Mesh(crossHairGeometry, crossHairMaterial);
+        // var scope = this;
+
+        init();
+        animate();
+
+        function init(){
+            container = document.createElement('div');
+            document.body.appendChild(container);
+            scene = new THREE.Scene();
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+            this.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40, I: 73 };
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener( 'mousedown', onMouseDown, false );
+            document.addEventListener('touchstart', onDocumentTouchStart, false);
+            window.addEventListener( 'keydown', myKeyDown, false );
+
+            var loader = new THREE.JDLoader();
+
+// LIGHTS Allan
+            scene.add( new THREE.AmbientLight( 0x443333, 0.1 ) );
+            var light = new THREE.DirectionalLight( 0xffddcc, 0.1 );
+            light.position.set( 1, 0.75, 0.5 );
+            scene.add( light );
+            var light = new THREE.DirectionalLight( 0xccccff, 0.1 );
+            light.position.set( -1, 0.75, -0.5 );
+            scene.add( light );
+
+            function GetObjectByName(objectName) {
+              console.log('getobjectbyname function has run');
+              for (var i = 0; i < clickableObjects.length; i++) {
+                if (clickableObjects[i].name == objectName) {
+                  return clickableObjects[i];
+                  break
+                }
+              }
+            }
+
+            loader.load("Brian_JS/room2.JD", function(data){
+
+              scene.add(parentCube);
+
+              var multiMaterial = new THREE.MultiMaterial(data.materials);
+              // console.log(data);
+              for (var i = 0; i < data.geometries.length; ++i){
+                  var mesh = new THREE.SkinnedMesh(data.geometries[i], multiMaterial);
+                  meshes.push(mesh);
+                  //object.geometry.name
+                  mesh.scale.set(4,4,4);
+                  mesh.position.set(0,-200,150);
+
+// ON CLICK FUNCTIONS
+
+                  mesh.onClick = function () {
+                    console.log("onClick triggered");
+                    // console.log(this.id);
+                    console.log(this);
+                    let objectDistance = camera.position.distanceTo(this.position);
+                    console.log(this.geometry.name, "is this far away:", objectDistance);
+                    // console.log(mesh);
+                    if(this.geometry.name === "SimpleSphere02_002"){
+                      this.translateX(500);
+                    }
+                    if(this.geometry.name === "FlushDoor24_1_002"){
+                      console.log("enter room 1");
+                      walkToRoom(0, -1600);
+                      // var direction = new THREE.Vector3(0, 0, -25); // amount to move per frame
+                      // function animate() {
+                      //   if(parentCube.position.z != "-1600"){
+                      //     parentCube.position.add(direction); // add to position
+                      //     renderer.render(camera, scene); // render new frame
+                      //     requestAnimationFrame(animate); // keep looping
+                      //   }
+                      // }
+                      // requestAnimationFrame(animate);
+                    }
+                    if(this.geometry.name === "RaisedPanel_001"){
+                      walkToRoom(-1175,-1000);
+                      // parentCube.position.set(-1183,0,-1012);
+                    }
+                    if(this.geometry.name === "Layer0_001"){
+                      walkToRoom(0,0);
+                      // parentCube.position.set(0,0,0);
+                    }
+
+                    // if(this.id === 15){
+                    //   var direction = new THREE.Vector3(0, 0, 25); // amount to move per frame
+                    //   function animate() {
+                    //     if(parentCube.position.z != "0"){
+                    //       console.log("if this ID = 15");
+                    //       parentCube.position.add(direction); // add to position
+                    //       renderer.render(camera, scene); // render new frame
+                    //       requestAnimationFrame(animate); // keep looping
+                    //     }
+                    //   }
+                    //   requestAnimationFrame(animate);
+                    // }
+                  }
+                  clickableObjects.push(mesh);
+                  scene.add(mesh);
+                  parentCube.add(mesh);
+
+                  if (mesh.geometry.animations){
+                      // console.log(mesh.geometry);
+                      // console.log('has animation');
+                      var mixer = new THREE.AnimationMixer(mesh);
+                      mixers.push(mixer);
+                      mixer.clipAction(mesh.geometry.animations[0]).play();
+                  }
+              }
+
+              camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10 * data.boundingSphere.radius);
+              camera.position.set(0,0,0);
+
+              camera.lookAt(data.boundingSphere.center);
+              scene.add(camera);  //mainLight.position.copy(camera.position);
+              camera.add(crossHair);
+              crossHair.id = "Crosshair";
+              crossHair.position.set(0,0,-100);
+              camera.add(new THREE.DirectionalLight(0xFFFFFF, 1));
+              if (!controls)
+                 controls = new THREE.OrbitControls(camera, renderer.domElement);
+              controls.target.copy(data.boundingSphere.center);
+            });
+        }
+
+// **FUNCTIONS SECTION**
+
+        function animate() {
+            var delta = clock.getDelta();
+            for (var i = 0; i < mixers.length; ++i)
+                mixers[i].update(delta);
+            if (controls) controls.update();
+            if (camera)  renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+            // console.log('X: ' + camera.position.x + ', Y: ' + camera.position.y + ', Z: ' + camera.position.z);
+        }
+
+// FUNCTION: WINDOW RESIZING
+
+        function onWindowResize() {
+            if (camera) {
+              camera.aspect = window.innerWidth / window.innerHeight;
+              camera.updateProjectionMatrix();
+            }
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+// FUNCTION: MOUSE; CLICK/TOUCHES
+
+        function onDocumentTouchStart(event) {
+          event.preventDefault();
+          // console.log('onDocumentTouchStart' + clickableObjects);
+          event.clientX = event.touches[0].clientX;
+          event.clientY = event.touches[0].clientY;
+          mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+          mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+          raycaster.setFromCamera(mouse, camera);
+          var intersects = raycaster.intersectObjects(clickableObjects);
+          if (intersects.length > 0) {
+            intersects[0].object.onClick();
+          }
+        }
+
+        function onMouseDown(event) {
+          // console.log(camera.position);
+          // console.log(scene.parentCube.position.x);
+          event.preventDefault();
+          if (event.touches === undefined) {
+            mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+            mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            var intersects = raycaster.intersectObjects(clickableObjects);
+            if (intersects.length > 0) {
+              intersects[0].object.onClick();
+            }
+          }
+        }
+
+// FUNCTION: ANIMATION; WALKING ROOM TO room
+
+        function walkToRoom(newRoomX, newRoomZ){
+          // console.log("x:" + newRoomX + " z:" + newRoomZ);
+          if(Math.sign(newRoomX) > 0){
+            var moveX = 25;
+          }else if (moveX < 0) {
+              var moveX = -25;
+          }else{
+            var moveX = 0;
+          }
+          if(Math.sign(newRoomZ) === 1){
+            var moveZ = 25;
+          }else if (moveZ === -1){
+            var moveZ = -25;
+          }else{
+            var moveZ = 0;
+          }
+
+          if(parentCube.position.x > newRoomX){
+            parentCube.position.x = (parentCube.position.x - 25); // add to position
+            renderer.render(camera, scene); // render new frame
+            // requestAnimationFrame(() => walkToRoom(newRoomX, newRoomZ));
+          }
+          if(parentCube.position.x < newRoomX){
+            parentCube.position.x = (parentCube.position.x + 25); // add to position
+            renderer.render(camera, scene); // render new frame
+            // requestAnimationFrame(() => walkToRoom(newRoomX, newRoomZ));
+          }
+          if(parentCube.position.z > newRoomZ){
+            parentCube.position.z = (parentCube.position.z - 25);
+            renderer.render(camera, scene);
+            // requestAnimationFrame(() => walkToRoom(newRoomX, newRoomZ));
+          }
+          if(parentCube.position.z < newRoomZ){
+            parentCube.position.z = (parentCube.position.z + 25);
+            renderer.render(camera, scene);
+            // requestAnimationFrame(() => walkToRoom(newRoomX, newRoomZ));
+          }
+          if(parentCube.position.x != newRoomX || parentCube.position.z != newRoomZ){
+            requestAnimationFrame(() => walkToRoom(newRoomX, newRoomZ));
+          }
+        }
+
+// FUNCTION: KEYS; FRONT/BACK FUNCTIONS
+
+        function myKeyDown( event ) {
+      		// if ( scope.enabled === false || scope.enableKeys === false || scope.enablePan === false ) return;
+      		// handleKeyDown( event );
+      	}
+
+        function myKeyDown( event ) {
+          var scope = this;
+          switch ( event.keyCode ) {
+
+            case scope.keys.I:
+              console.log(parentCube.position);
+            break;
+
+            case scope.keys.RIGHT:
+            // let vectorCam = new THREE.Vector3();
+            // camera.position.distanceTo(object.position); // get distance from camera to object
+            console.log("Camera Direction:", camera.getWorldDirection());
+            // var nanobotTest = new THREE.Mesh(new THREE.CubeGeometry(5, 5, 5, 1, 1, 1), );
+            // camera.add(nanobotTest);
+            // nanobotTest.position.set(0,0,-200);
+            // setTimeout(function(){
+            //   THREE.SceneUtils.detach(nanobotTest, camera, scene);
+            //   setTimeout(function(){
+            //     var point1x = parentCube.position.x + (nanobotTest.position.x/4)*-1;
+            //     var point2x = parentCube.position.x + ((nanobotTest.position.x/4)*2)*-1;
+            //     var point3x = parentCube.position.x + ((nanobotTest.position.x/4)*3)*-1;
+            //     var point1z = parentCube.position.z + (nanobotTest.position.z/4)*-1;
+            //     var point2z = parentCube.position.z + ((nanobotTest.position.z/4)*2)*-1;
+            //     var point3z = parentCube.position.z + ((nanobotTest.position.z/4)*3)*-1;
+            //     var finalx = parentCube.position.x + nanobotTest.position.x;
+            //     var finalz = parentCube.position.z + nanobotTest.position.z;
+            //     console.log("p1x:" + point1x + ", p1z:" + point1z + ", p2x:" + point2x + ", p2z:" + point2z + ", p3x:" + point3x + ", finalx: " + finalx + " / " + nanobotTest.position.x + ", finalz:" + finalz + " / " + nanobotTest.position.z);
+            //     parentCube.position.set(point1x, 0, point1z);
+            //     setTimeout(function(){
+            //       parentCube.position.set(point2x, 0, point2z);
+            //       setTimeout(function(){
+            //         parentCube.position.set(point3x, 0, point3z);
+            //         setTimeout(function(){
+            //           // parentCube.position.set(finalx, 0, finalz);
+            //           setTimeout(function(){
+            //             scene.remove(nanobotTest);
+            //             camera.remove(nanobotTest);
+            //             console.log("complete");
+            //           },5);
+            //         },5);
+            //       },5);
+            //     },5);
+            //   },5);
+            // },5);
+            break;
+
+            case scope.keys.UP:
+            console.log("Up Start; ParentCube Position:")
+            console.log(parentCube.position);
+            var nanobot = new THREE.Mesh(new THREE.CubeGeometry(5, 5, 5, 1, 1, 1), );
+
+            scene.add(nanobot);
+            camera.add(nanobot);
+            nanobot.position.set(0,0,-200);
+
+            setTimeout(function(){
+              console.log("timeout: 0.5 second start");
+              THREE.SceneUtils.detach(nanobot, camera, scene);
+              var nanobotPositionX = (parentCube.position.x + nanobot.position.x*-1);
+              var nanobotPositionZ = (parentCube.position.z + nanobot.position.z*-1);
+                console.log("Nanobot Position:");
+                console.log("X: " + nanobotPositionX + " Z: " + nanobotPositionZ);
+                parentCube.position.set(nanobotPositionX, 0, nanobotPositionZ);
+                console.log("Up Finished; New ParentCube Position:")
+                console.log(parentCube.position);
+            },500);
+            console.log("timeout: 1 second finish");
+            scene.remove(nanobot);
+            camera.remove(nanobot);
+            parentCube.add(nanobot);
+              break;
+
+            case scope.keys.BOTTOM:
+            console.log("down; parentCube position:");
+            console.log(parentCube.position);
+            var nanobotBack = new THREE.Mesh(new THREE.CubeGeometry(5, 5, 5, 1, 1, 1), );
+            scene.add(nanobotBack);
+            camera.add(nanobotBack);
+            nanobotBack.position.set(0,0,-200);
+
+            setTimeout(function(){
+              console.log("timeout: 0.5 second start");
+              THREE.SceneUtils.detach(nanobotBack, camera, scene);
+              var nanobotBackPositionX = (parentCube.position.x + nanobotBack.position.x);
+              var nanobotBackPositionZ = (parentCube.position.z + nanobotBack.position.z);
+              parentCube.position.set(nanobotBackPositionX, 0, nanobotBackPositionZ);
+            },500);
+            console.log("timeout: 1 second finish");
+            scene.remove(nanobotBack);
+              break;
+          }
+        }
+
+
+    </script>
+</body>
+</html>
