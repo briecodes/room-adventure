@@ -141,6 +141,7 @@
 
               camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10 * data.boundingSphere.radius);
               camera.position.set(0,0,0);
+              // camera.getWorldDirection(-0.9860137237874966, -0.06308261426494845, 0.1542644491780728)
 
               camera.lookAt(data.boundingSphere.center);
               scene.add(camera);  //mainLight.position.copy(camera.position);
