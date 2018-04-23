@@ -322,6 +322,7 @@
                 console.log("Nanobot Position:");
                 console.log("X: " + nanobotPositionX + " Z: " + nanobotPositionZ);
                 parentCube.position.set(nanobotPositionX, 0, nanobotPositionZ);
+                // camera.position.set(500, 0, 0);
                 console.log("Up Finished; New ParentCube Position:")
                 console.log(parentCube.position);
             },500);
@@ -344,7 +345,8 @@
               THREE.SceneUtils.detach(nanobotBack, camera, scene);
               var nanobotBackPositionX = (parentCube.position.x + nanobotBack.position.x);
               var nanobotBackPositionZ = (parentCube.position.z + nanobotBack.position.z);
-              parentCube.position.set(nanobotBackPositionX, 0, nanobotBackPositionZ);
+              // parentCube.position.set(nanobotBackPositionX, 0, nanobotBackPositionZ);
+              camera.position.set(nanobotBackPositionX, 0, nanobotBackPositionZ);
             },500);
             console.log("timeout: 1 second finish");
             scene.remove(nanobotBack);
