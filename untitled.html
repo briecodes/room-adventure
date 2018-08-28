@@ -285,9 +285,9 @@
 
         // objects
         
-        // let loader = new THREE.OBJLoader();
-        // loader.setPath('./3D/Restaurant/');
-        // loader.load('General.obj', (object) => {
+        // let barLoader = new THREE.OBJLoader();
+        // barLoader.setPath('./3D/Restaurant/');
+        // barLoader.load('General.obj', (object) => {
         //   object.position.y += 2;
         //   object.scale.x = 3;
         //   object.scale.y = 3;
@@ -302,19 +302,35 @@
         // mtlLoader.load('stonetee.mtl', (materials) => {
         //   materials.preload();
 
-          let objLoader = new THREE.OBJLoader();
+          let houseLoader = new THREE.OBJLoader();
           // objLoader.setMaterials(materials);
-          objLoader.setPath('./3D/Room/');
-          objLoader.load('stonetee.obj', (object) => {
+          houseLoader.setPath('./3D/Room/');
+          houseLoader.load('stonetee.obj', (object) => {
             object.position.y += 2;
             object.scale.x = 0.4;
             object.scale.y = 0.4;
             object.scale.z = 0.4;
             objects.push(object);
-            console.log('object', object);
             scene.add(object);
           });
         // });
+
+        // PIGGY!
+
+        let piggyLoader = new THREE.OBJLoader();
+        piggyLoader.setPath('./3D/Piggy/');
+        piggyLoader.load('PiggyBank.obj', (object) => {
+          object.position.y += 1.5;
+          object.position.z -= 15;
+          object.rotation.x -= 1.6;
+          console.log('pig rotation', object.rotation.y);
+          object.scale.x = 0.05;
+          object.scale.y = 0.05;
+          object.scale.z = 0.05;
+          objects.push(object);
+          scene.add(object);
+          walk(object);
+        });
 
 				// var boxGeometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
 				// boxGeometry = boxGeometry.toNonIndexed(); // ensure each face has unique vertices
@@ -360,13 +376,14 @@
 			}
 
 			function onWindowResize() {
-
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
-
 				renderer.setSize( window.innerWidth, window.innerHeight );
-
 			}
+
+      function walk(object) {
+        
+      }
 
 			function animate() {
 
