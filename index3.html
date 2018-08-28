@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Animation</title>
+    <title>Room Adventure | Original</title>
     <style>
       body { font-family: Arial; color: #ff6a00; background-color: #000; margin: 0px; overflow: hidden; }
     </style>
 </head>
 <body>
-    <script src="three.js"></script>
-    <script src="OrbitControls.js"></script>
-    <script src="JDLoader.min.js"></script>
+    <script src="./js/js_original/three.js"></script>
+    <script src="./js/js_original/OrbitControls.js"></script>
+    <script src="./js/js_original/JDLoader.min.js"></script>
     <script>
         var meshes = [], mixers = [], hemisphereLight, camera, scene, renderer, controls;
         var clock = new THREE.Clock;
@@ -18,7 +18,7 @@
         var clickableObjects = [];
         var deg = Math.PI / 180;
         var parentCube = new THREE.Mesh(new THREE.CubeGeometry(0.01, 0.01, 0.01, 1, 1, 1), );
-        var crossHairTexture = new THREE.TextureLoader().load( 'Brian_JS/crosshair.png' );
+        var crossHairTexture = new THREE.TextureLoader().load( './3D/crosshair.png' );
         var crossHairGeometry = new THREE.PlaneGeometry( 25, 25, 1, 1 );
         var crossHairMaterial = new THREE.MeshBasicMaterial( {map: crossHairTexture, transparent: true, side: THREE.DoubleSide} );
         var crossHair = new THREE.Mesh(crossHairGeometry, crossHairMaterial);
@@ -66,7 +66,7 @@
               }
             }
 
-            loader.load("Brian_JS/room2.JD", function(data){
+            loader.load("./3D/room2.JD", function(data){
 
               scene.add(parentCube);
 
